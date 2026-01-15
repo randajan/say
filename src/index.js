@@ -15,7 +15,6 @@ export class Say extends Function {
      * @param {Say|null} opts.parent
      */
     constructor({ defaultLang = null, langs = [], translations = {}, parent = null } = {}) {
-        // Make the instance callable: (...args) => this.say(...args)
         super();
 
         langs = langs ?? [];
