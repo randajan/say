@@ -1,0 +1,48 @@
+{
+  "name": "@randajan/say",
+  "version": "0.0.1",
+  "description": "Tiny, chainable phrase lookup helper for simple localization with fallbacks.",
+  "repository": "randajan/say",
+  "type": "module",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/cjs/index.cjs"
+    }
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@randajan/simple-lib": "^3.3.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "i18n",
+    "localization",
+    "translation",
+    "phrases",
+    "language",
+    "lookup",
+    "fallback",
+    "chainable",
+    "minimal",
+    "tiny"
+  ],
+  "homepage": "https://github.com/randajan/say",
+  "bugs": {
+    "url": "https://github.com/randajan/say/issues"
+  },
+  "author": {
+    "name": "Jan Randa",
+    "email": "jnranda@gmail.com",
+    "url": "https://www.linkedin.com/in/randajan/"
+  },
+  "dependencies": {
+    "@randajan/props": "^0.1.4"
+  }
+}
