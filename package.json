@@ -1,6 +1,6 @@
 {
   "name": "@randajan/say",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Tiny, chainable phrase lookup helper for simple localization with fallbacks.",
   "repository": "randajan/say",
   "type": "module",
