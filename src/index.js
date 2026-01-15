@@ -32,8 +32,6 @@ export class Say extends Function {
             parent
         });
 
-        console.log("h", _say.langIndex);
-
         return Object.setPrototypeOf(_say, new.target.prototype);
     }
 
