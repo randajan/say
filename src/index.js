@@ -60,8 +60,6 @@ export class Say extends Function {
     extend({ defaultLang, langs, translations} = {}) {
         if (!langs) { langs = this.langs; }
         else if (!defaultLang) { defaultLang = this.defaultLang; }
-
-        console.log({ defaultLang, langs, translations }, {...this});
         return new Say({defaultLang, langs, translations, parent:this});
     }
 
