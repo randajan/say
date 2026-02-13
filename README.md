@@ -36,20 +36,28 @@ Creates a callable instance that can be invoked like a function: `say("phraseId"
 Options:
 - `langs` (`string[]`): Ordered list of language codes.
 - `translations` (`Record<string, string[]>`): Phrase table, where each entry aligns with `langs`.
-- `defaultLang` (`string`): Default language to use when none is provided.
+- `defaultLang` (`string`): Default language to use when none is provided. If omitted, `langs[0]` is used. Can be changed later via `setLang`.
 - `parent` (`Say | null`): Optional parent instance for fallback lookups.
 
 ### `say(phraseId, lang?)`
 
-Returns the translation for `phraseId` in `lang` or the default language. Falls back to `parent` if not found.
+Returns the translation for `phraseId` in `lang` or the current default language. Falls back to `parent` if not found.
 
 ### `bindLang(lang)`
 
 Returns a new instance with `defaultLang` set to `lang`, keeping the same language list and parent chain.
 
+### `setLang(lang)`
+
+Mutates the current instance by setting `defaultLang` to `lang` and returns the same instance.
+
 ### `extend({ defaultLang, langs, translations } = {})`
 
 Creates a new instance that can override `defaultLang`, `langs`, or `translations` and chains the current instance as `parent`.
+
+### `append(brother)`
+
+Appends another `Say` instance as a "brother" for fallback lookups. Returns the same instance. `brother` must be an instance of `Say`.
 
 ### `has(phraseId, lang?)`
 

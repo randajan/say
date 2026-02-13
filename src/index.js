@@ -20,13 +20,12 @@ export class Say extends Function {
         const brothers = [];
         langs = langs ?? [];
         translations = translations ?? {};
-        defaultLang = defaultLang ?? langs[0];
+        this.defaultLang = defaultLang ?? langs[0];
 
         // Important: keep prototype = Say so instance methods work
         const _say = (phraseId, lang) => _say.say(phraseId, lang);
 
         solids(_say, {
-            defaultLang,
             langs,
             langIndex: makeLangIndex(langs),
             translations,
@@ -110,6 +109,11 @@ export class Say extends Function {
 
     say(phraseId, lang) {
         return this.sayOr(phraseId, `{${phraseId}}`, lang);
+    }
+
+    setLang(lang) {
+        this.defaultLang = lang;
+        return this;
     }
 }
 
