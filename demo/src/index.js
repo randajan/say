@@ -1,13 +1,19 @@
-import { info, log } from "@randajan/simple-lib/node";
-import Say from "../../dist/esm/index.mjs";
+import { log } from "@randajan/simple-lib/node";
+import { Lexicon, Locale } from "../../dist/esm/index.mjs";
 
 const hr = () => log("------------------------------------------------------------");
 const show = (label, value) => log(label, value);
 const showJson = (label, value) => log(label, JSON.stringify(value));
 
-log("Say demo: base table");
-const sayBase = new Say({
-    langs: ["en", "cs", "en-GB"],
+const tell = (lexicon, locale, text) => {
+    return String(text ?? "").replace(/\p{L}+/gu, (phraseId) => {
+        return lexicon.lookup(locale, phraseId, false) ?? `{${phraseId}}`;
+    });
+};
+
+log("Lexicon demo: base table");
+const lexBase = new Lexicon({
+    locales: ["en", "cs", "en-GB"],
     translations: {
         hello: ["Hello", "Ahoj", "Hello (UK)"],
         color: ["Color", "Barva", "Colour"],
@@ -17,9 +23,9 @@ const sayBase = new Say({
 });
 
 hr();
-log("Override + different langs order");
-const sayUk = sayBase.extend({
-    langs: ["en-GB", "en", "cs"], // different order
+log("Override + different locales order");
+const lexUk = lexBase.extend({
+    locales: ["en-GB", "en", "cs"], // different order
     translations: {
         color: ["Colour (UK)", "Color", "Barva"], // override base
         invoice: ["Invoice (UK)", "Invoice", "Faktura"],
@@ -28,7 +34,7 @@ const sayUk = sayBase.extend({
 
 hr();
 log("App layer (parent chain)");
-const sayApp = sayUk.extend({
+const lexApp = lexUk.extend({
     translations: {
         welcome: ["Welcome!", "Welcome!", "Vitej!"],
         item: ["Line item", "Line item", "Polozka"],
@@ -36,38 +42,58 @@ const sayApp = sayUk.extend({
 });
 
 hr();
-log("Brother table (append)");
-const sayMarketing = new Say({
-    langs: ["en", "cs", "en-GB"],
-    translations: {
-        tagline: ["Fast & light", "Rychle a lehce", "Fast & light"],
-        hello: ["Hello, friend", "Ahoj, pritele", "Hello, mate"],
-    },
-});
-sayApp.append(sayMarketing);
+log("Select locale (Say sugar over Lexicon)");
+const sayCs = lexApp.select("cs");
+const sayEn = lexApp.select("en");
+const sayEnGb = lexApp.select("en-GB");
 
 hr();
-log("Callable usage");
-show("sayApp('welcome', 'cs') ->", sayApp("welcome", "cs"));
-show("sayApp('color', 'en-GB') ->", sayApp("color", "en-GB")); // override from sayUk
-show("sayApp('phone', 'en') ->", sayApp("phone", "en")); // fallback to base
-show("sayApp('tagline', 'en') ->", sayApp("tagline", "en")); // fallback to brother
-show("sayApp('hello', 'en-GB') ->", sayApp("hello", "en-GB")); // brother overrides base
+log("Lookup usage");
+show("lexApp.lookup('cs', 'welcome') ->", lexApp.lookup("cs", "welcome", false));
+show("lexApp.lookup('en-GB', 'color') ->", lexApp.lookup("en-GB", "color", false)); // override from lexUk
+show("lexApp.lookup('en', 'phone') ->", lexApp.lookup("en", "phone", false)); // fallback to base
 
 hr();
-log("Default language + bindLang");
-const sayCs = sayApp.bindLang("cs");
-const sayEnGb = sayApp.bindLang("en-GB");
-show("sayCs('item') ->", sayCs("item"));
-show("sayEnGb('invoice') ->", sayEnGb("invoice"));
-
-hr();
-log("has / sayOr / empty-string support");
-show("has('color','en') ->", sayApp.has("color", "en"));
-show("has('missing','en') ->", sayApp.has("missing", "en"));
-show("sayOr('missing','<fallback>','en') ->", sayApp.sayOr("missing", "<fallback>", "en"));
-showJson("sayOr('empty','<fallback>','en') ->", sayApp.sayOr("empty", "<fallback>", "en"));
+log("has / or / empty-string support");
+show("sayEn.has('color') ->", sayEn.has("color"));
+show("sayEn.has('missing') ->", sayEn.has("missing"));
+show("sayEn.or('missing','<fallback>') ->", sayEn.or("missing", "<fallback>"));
+showJson("sayEn.or('empty','<fallback>') ->", sayEn.or("empty", "<fallback>"));
 
 hr();
 log("Missing phrase default behavior");
-show("sayApp('missing','en') ->", sayApp("missing", "en"));
+show("lexApp.lookup('en','missing', false) ->", lexApp.lookup("en", "missing", false));
+
+hr();
+log("tell(text) word replacement");
+show(
+    "tell(lexApp, 'en', 'hello, color phone! missing.') ->",
+    tell(lexApp, "en", "hello, color phone! missing.")
+);
+show(
+    "tell(lexApp, 'en-GB', 'hello, color phone! invoice.') ->",
+    tell(lexApp, "en-GB", "hello, color phone! invoice.")
+);
+show(
+    "tell(lexApp, 'cs', 'welcome : item color unknown') ->",
+    tell(lexApp, "cs", "welcome : item color unknown")
+);
+
+
+const cs = new Locale({
+    id:"cs-Cz",
+    inflectSelector:(num, pattern)=>{
+        const r = Math.round(num);
+        if (r !== num) { return pattern[2]; } //decimal
+
+        const a = Math.abs(r);
+        if (a === 1) { return pattern[1]; }
+        if (a > 1 && a < 5) { return pattern[2]; }
+        return pattern[3];
+    }
+});
+
+
+for (let i=-1; i<3; i+=0.5) {
+    console.log(cs.inflect("{#} hodin[|a|y|]", Math.random()*10, { decimal:1 }));
+}
