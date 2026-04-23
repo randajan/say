@@ -1,9 +1,12 @@
 import { log } from "@randajan/simple-lib/node";
 import { Lexicon, Locale } from "../../dist/esm/index.mjs";
+import csLocale from "../../dist/esm/defaults/locales/cs.mjs";
+import enLocale from "../../dist/esm/defaults/locales/en.mjs";
 
 const hr = () => log("------------------------------------------------------------");
 const show = (label, value) => log(label, value);
 const showJson = (label, value) => log(label, JSON.stringify(value));
+
 
 const tell = (lexicon, locale, text) => {
     return String(text ?? "").replace(/\p{L}+/gu, (phraseId) => {
@@ -13,12 +16,15 @@ const tell = (lexicon, locale, text) => {
 
 log("Lexicon demo: base table");
 const lexBase = new Lexicon({
-    locales: ["en", "cs", "en-GB"],
+    locales: [enLocale, csLocale, "en-GB"],
     translations: {
         hello: ["Hello", "Ahoj", "Hello (UK)"],
         color: ["Color", "Barva", "Colour"],
         phone: ["Phone", "Telefon", "Telephone"],
         empty: ["", "", ""],
+        hours: ["{#} hour[s]", "{#} hodin[|a|y|]", "{#} hour[s]"],
+        czk:["{#} CZK", "{#} Kč", "{#} CZK"],
+        eur:["€{#}", "€{#}", "€{#}"]
     },
 });
 
@@ -61,6 +67,20 @@ show("sayEn.or('missing','<fallback>') ->", sayEn.or("missing", "<fallback>"));
 showJson("sayEn.or('empty','<fallback>') ->", sayEn.or("empty", "<fallback>"));
 
 hr();
+log("num(phraseId, num) with Locale + Lexicon");
+show("sayCs.num('hours', 1) ->", sayCs.num("hours", 1));
+show("sayCs.num('hours', 2) ->", sayCs.num("hours", 26757457));
+show("sayCs.num('hours', 5) ->", sayCs.num("hours", 5));
+show("sayEn.num('hours', 1) ->", sayEn.num("hours", 26757457)); // default Locale inflect behavior
+show("sayEn.num('missing', 1) ->", sayEn.num("missing", 1));
+show("sayCs.num('czk', 1) ->", sayCs.num("czk", 1));
+show("sayCs.num('czk', 2) ->", sayCs.num("czk", 2));
+show("sayEn.num('czk', 5) ->", sayEn.num("czk", 52675745));
+show("sayCs.num('eur', 1) ->", sayCs.num("eur", 1));
+show("sayCs.num('eur', 2) ->", sayCs.num("eur", 2));
+show("sayEn.num('eur', 5) ->", sayEn.num("eur", 5));
+
+hr();
 log("Missing phrase default behavior");
 show("lexApp.lookup('en','missing', false) ->", lexApp.lookup("en", "missing", false));
 
@@ -78,22 +98,3 @@ show(
     "tell(lexApp, 'cs', 'welcome : item color unknown') ->",
     tell(lexApp, "cs", "welcome : item color unknown")
 );
-
-
-const cs = new Locale({
-    id:"cs-Cz",
-    inflectSelector:(num, pattern)=>{
-        const r = Math.round(num);
-        if (r !== num) { return pattern[2]; } //decimal
-
-        const a = Math.abs(r);
-        if (a === 1) { return pattern[1]; }
-        if (a > 1 && a < 5) { return pattern[2]; }
-        return pattern[3];
-    }
-});
-
-
-for (let i=-1; i<3; i+=0.5) {
-    console.log(cs.inflect("{#} hodin[|a|y|]", Math.random()*10, { decimal:1 }));
-}

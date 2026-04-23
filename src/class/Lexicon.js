@@ -1,13 +1,12 @@
-import { makeLocaleIndex } from "../tools";
 import { solids } from "@randajan/props";
+import { Locale } from "./Locale";
 import { Say } from "./Say";
-
 
 export class Lexicon {
 
     /**
      * @param {object} opts
-     * @param {string[]} opts.locales
+     * @param {(string|Locale|object)[]} opts.locales
      * @param {Record<string, string[]>} opts.translations
      * @param {Lexicon|null} opts.parent
      */
@@ -18,56 +17,92 @@ export class Lexicon {
         parent = null
     } = {}) {
 
-        const brothers = [];
-        locales = locales ?? [];
+        const siblings = [];
+        locales = Locale.normalizeAll(locales, (localeId) => parent?.resolveLocale(localeId, false));
         translations = translations ?? {};
 
         solids(this, {
             locales,
-            localesIndex: makeLocaleIndex(locales),
+            localeIndex: Locale.makeLocalesIndex(locales),
             translations,
             parent,
-            brothers
+            siblings
         });
 
     }
 
-    lookupSelf(locale, phraseId) {
-        const i = this.localesIndex[locale];
+    lookupSelf(localeId, phraseId) {
+        const i = this.localeIndex[localeId];
         if (i == null) { return; }
         const arr = this.translations?.[phraseId];
         if (!Array.isArray(arr)) { return; }
         return arr[i];
     }
 
-    lookupBrothers(locale, phraseId, seen=new WeakSet()) {
-        const { brothers } = this;
-        if (!brothers.length) { return; }
-        for (const bro of brothers) {
-            const r = bro.lookup(locale, phraseId, false, seen);
+    lookupSiblings(localeId, phraseId, seen=new WeakSet()) {
+        const { siblings } = this;
+        if (!siblings.length) { return; }
+        for (const sibling of siblings) {
+            const r = sibling.lookup(localeId, phraseId, false, seen);
             if (r != null) { return r; }
         }
     }
 
-    lookupParent(locale, phraseId, seen=new WeakSet()) {
+    lookupParent(localeId, phraseId, seen=new WeakSet()) {
         const { parent } = this;
-        return parent?.lookup(locale, phraseId, false, seen);
+        return parent?.lookup(localeId, phraseId, false, seen);
     }
 
-    lookup(locale, phraseId, throwError=true, seen=new WeakSet()) {
+    lookup(localeId, phraseId, throwError=true, seen=new WeakSet()) {
         if (seen.has(this)) { return; } else { seen.add(this); }
 
-        const vh = this.lookupSelf(locale, phraseId);
+        const vh = this.lookupSelf(localeId, phraseId);
         if (vh != null) { return vh; }
 
-        const vb = this.lookupBrothers(locale, phraseId, seen);
+        const vb = this.lookupSiblings(localeId, phraseId, seen);
         if (vb != null) { return vb; }
 
-        const vp = this.lookupParent(locale, phraseId, seen);
+        const vp = this.lookupParent(localeId, phraseId, seen);
         if (vp != null) { return vp; }
 
         if (!throwError) { return; }
-        throw new Error(`Phrase '${phraseId}' not found (locale '${locale}').`);
+        throw new Error(`Phrase '${phraseId}' not found (locale '${localeId}').`);
+    }
+
+    resolveLocaleSelf(localeId) {
+        const i = this.localeIndex[localeId];
+        if (i == null) { return; }
+        return this.locales[i];
+    }
+
+    resolveLocaleParent(localeId, seen=new WeakSet()) {
+        const { parent } = this;
+        return parent?.resolveLocale(localeId, false, seen);
+    }
+
+    resolveLocaleSiblings(localeId, seen=new WeakSet()) {
+        const { siblings } = this;
+        if (!siblings.length) { return; }
+        for (const sibling of siblings) {
+            const r = sibling.resolveLocale(localeId, false, seen);
+            if (r) { return r; }
+        }
+    }
+
+    resolveLocale(localeId, throwError=true, seen=new WeakSet()) {
+        if (seen.has(this)) { return; } else { seen.add(this); }
+
+        const vh = this.resolveLocaleSelf(localeId);
+        if (vh) { return vh; }
+
+        const vp = this.resolveLocaleParent(localeId, seen);
+        if (vp) { return vp; }
+
+        const vb = this.resolveLocaleSiblings(localeId, seen);
+        if (vb) { return vb; }
+
+        if (!throwError) { return; }
+        throw new Error(`Locale '${localeId}' not found.`);
     }
 
     extend({ locales, translations} = {}) {
@@ -75,22 +110,22 @@ export class Lexicon {
         return new Lexicon({locales, translations, parent:this});
     }
     
-    append(brother) {
-        if (brother === this) {
-            throw new Error(`Lexicon.append(children) can't accept itself`);
+    addSibling(sibling) {
+        if (sibling === this) {
+            throw new Error(`Lexicon.addSibling(sibling) can't accept itself`);
         }
-        if (brother === this.parent) {
-            throw new Error(`Lexicon.append(children) can't accept own parent`);
+        if (sibling === this.parent) {
+            throw new Error(`Lexicon.addSibling(sibling) can't accept own parent`);
         }
-        if (!(brother instanceof Lexicon)) {
-            throw new Error(`Lexicon.append(children) must by instanceof Lexicon()`);
+        if (!(sibling instanceof Lexicon)) {
+            throw new Error(`Lexicon.addSibling(sibling) must by instanceof Lexicon()`);
         }
-        this.brothers.push(brother);
+        this.siblings.push(sibling);
         return this;
     }
 
-    select(locale) {
-        return new Say(this, locale);
+    select(localeId) {
+        return new Say(this, this.resolveLocale(localeId));
     }
 
 }

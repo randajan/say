@@ -2,11 +2,52 @@ import { solids } from "@randajan/props";
 import { formatDecimalCfg, numFormat } from "../tools";
 
 const _patternRegex = /\[.+\]/;
+const _defaultInflectSelector = (() => {});
 
 export class Locale {
+    static makeLocalesIndex(locales = []) {
+        const idx = {};
+        for (let i = 0; i < locales.length; i++) {
+            const item = locales[i];
+            const id = typeof item === "string" ? item : item?.id;
+
+            if (typeof id !== "string" || !id) {
+                throw new TypeError(`Locale at index ${i} must have non-empty string 'id'.`);
+            }
+            if (idx[id] != null) {
+                throw new Error(`Duplicate locale '${id}'.`);
+            }
+            idx[id] = i;
+        }
+        return idx;
+    }
+
+    static normalize(rawLocale, resolveById) {
+        if (rawLocale instanceof Locale) { return rawLocale; }
+
+        if (typeof rawLocale === "string") {
+            return resolveById?.(rawLocale) ?? new Locale({ id: rawLocale });
+        }
+
+        if (rawLocale && typeof rawLocale === "object") {
+            const locale = new Locale(rawLocale);
+            if (typeof locale.id !== "string" || !locale.id) {
+                throw new TypeError(`Locale object must contain non-empty string 'id'.`);
+            }
+            return locale;
+        }
+
+        throw new TypeError(`Locale must be string, Locale instance, or object, got '${rawLocale}'`);
+    }
+
+    static normalizeAll(locales = [], resolveById, freeze=true) {
+        const arr = (locales ?? []).map((rawLocale) => Locale.normalize(rawLocale, resolveById));
+        return freeze ? Object.freeze(arr) : arr;
+    }
+
     constructor({
         id,
-        inflectSelector = (() => {}),
+        inflectSelector = _defaultInflectSelector,
         numberPlaceholder = "{#}",
         nanSymbol = "?",
         nanSelect = 0,
@@ -23,6 +64,10 @@ export class Locale {
             infinitySelect,
             cachedPatterns: new Map()
         });
+    }
+
+    toString() {
+        return this.id;
     }
 
     _parsePattern(pattern) {

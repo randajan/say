@@ -10,6 +10,26 @@
     ".": {
       "import": "./dist/esm/index.mjs",
       "require": "./dist/cjs/index.cjs"
+    },
+    "./defaults/locales/cs": {
+      "import": "./dist/esm/defaults/locales/cs.mjs",
+      "require": "./dist/cjs/defaults/locales/cs.cjs"
+    },
+    "./defaults/locales/de": {
+      "import": "./dist/esm/defaults/locales/de.mjs",
+      "require": "./dist/cjs/defaults/locales/de.cjs"
+    },
+    "./defaults/locales/en": {
+      "import": "./dist/esm/defaults/locales/en.mjs",
+      "require": "./dist/cjs/defaults/locales/en.cjs"
+    },
+    "./defaults/locales/pl": {
+      "import": "./dist/esm/defaults/locales/pl.mjs",
+      "require": "./dist/cjs/defaults/locales/pl.cjs"
+    },
+    "./defaults/locales/sk": {
+      "import": "./dist/esm/defaults/locales/sk.mjs",
+      "require": "./dist/cjs/defaults/locales/sk.cjs"
     }
   },
   "license": "MIT",

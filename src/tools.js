@@ -1,12 +1,6 @@
-export const makeLocaleIndex = (locales = []) => {
-    const idx = {};
-    for (let i = 0; i < locales.length; i++) idx[locales[i]] = i;
-    return idx;
-};
-
 export const validPosInt = (num, required, propName)=>{
     if (num == null && !required) { return; }
-    if (typeof num === "number" && num >= 0 && Math.floor(num) === num) { return num; }
+    if (typeof num === "number" && num >= 0 && Number.isInteger(num)) { return num; }
     throw new TypeError(`${propName} must be positive integer got ${num}`);
 }
 

@@ -1,71 +1,187 @@
 # @randajan/say
 
-[![NPM](https://img.shields.io/npm/v/@randajan/say.svg)](https://www.npmjs.com/package/@randajan/say) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+Tiny i18n dictionary with callable sugar and number inflection.
 
-A tiny, chainable phrase lookup helper for simple localization with fallbacks.
+`say("hello")`  
+`say.num("hours", 3)`  
+Done.
 
-This project is a small toy for experimenting with callable objects and minimal translation tables.
-
-## Installation
+## Install
 
 ```bash
 npm install @randajan/say
 ```
 
-## Exports (CJS / ESM)
-
-ESM:
+## Quick Start
 
 ```js
-import Say, { Say as SayClass } from "@randajan/say";
+import Lexicon from "@randajan/say";
+import en from "@randajan/say/defaults/locales/en";
+import cs from "@randajan/say/defaults/locales/cs";
+
+const lexicon = new Lexicon({
+    locales: [en, cs],
+    translations: {
+        hello: ["Hello", "Ahoj"],
+        hours: ["{#} hour[s]", "{#} hodin[|a|y|]"]
+    }
+});
+
+const sayEn = lexicon.select("en");
+const sayCs = lexicon.select("cs");
+
+sayEn("hello");        // "Hello"
+sayEn.num("hours", 1); // "1 hour"
+sayEn.num("hours", 3); // "3 hours"
+
+sayCs("hello");        // "Ahoj"
+sayCs.num("hours", 1); // "1 hodina"
+sayCs.num("hours", 3); // "3 hodiny"
+sayCs.num("hours", 5); // "5 hodin"
 ```
 
-CommonJS:
+## Exports
+
+### Main package
 
 ```js
-const Say = require("@randajan/say");
-const { Say: SayClass } = require("@randajan/say");
+import Lexicon, { Lexicon as LexiconClass, Locale, Say } from "@randajan/say";
+```
+
+`default` export is `Lexicon`.
+
+### Locale defaults
+
+```js
+import en from "@randajan/say/defaults/locales/en";
+import de from "@randajan/say/defaults/locales/de";
+import cs from "@randajan/say/defaults/locales/cs";
+import sk from "@randajan/say/defaults/locales/sk";
+import pl from "@randajan/say/defaults/locales/pl";
+```
+
+## Mental Model
+
+- `Lexicon`: translations + fallback graph.
+- `Locale`: number formatting + inflection selector.
+- `Say`: callable view bound to one locale.
+
+`select(localeId)` gives you a `say` function:
+
+```js
+const say = lexicon.select("en");
+say("hello");
+say.or("missing", "<fallback>");
+say.num("hours", 2);
 ```
 
 ## API
 
-### `new Say(options)`
+### `new Lexicon({ locales, translations, parent } = {})`
 
-Creates a callable instance that can be invoked like a function: `say("phraseId", "en")`.
+- `locales`: array of `Locale | string | object`.
+- `translations`: `Record<string, string[]>` aligned by `locales` index.
+- `parent`: optional parent `Lexicon`.
 
-Options:
-- `langs` (`string[]`): Ordered list of language codes.
-- `translations` (`Record<string, string[]>`): Phrase table, where each entry aligns with `langs`.
-- `defaultLang` (`string`): Default language to use when none is provided. If omitted, `langs[0]` is used. Can be changed later via `setLang`.
-- `parent` (`Say | null`): Optional parent instance for fallback lookups.
+Locale IDs are matched exactly (`"en"` is not `"en-GB"`).
 
-### `say(phraseId, lang?)`
+### `lexicon.lookup(localeId, phraseId, throwError = true)`
 
-Returns the translation for `phraseId` in `lang` or the current default language. Falls back to `parent` if not found.
+Lookup order:
 
-### `bindLang(lang)`
+1. self
+2. siblings
+3. parent
 
-Returns a new instance with `defaultLang` set to `lang`, keeping the same language list and parent chain.
+If nothing is found and `throwError === true`, throws.
 
-### `setLang(lang)`
+### `lexicon.resolveLocale(localeId, throwError = true)`
 
-Mutates the current instance by setting `defaultLang` to `lang` and returns the same instance.
+Resolve order:
 
-### `extend({ defaultLang, langs, translations } = {})`
+1. self
+2. parent
+3. siblings
 
-Creates a new instance that can override `defaultLang`, `langs`, or `translations` and chains the current instance as `parent`.
+If not found and `throwError === true`, throws.
 
-### `append(brother)`
+### `lexicon.select(localeId)`
 
-Appends another `Say` instance as a "brother" for fallback lookups. Returns the same instance. `brother` must be an instance of `Say`.
+Returns a callable `Say` instance bound to resolved `Locale`.
 
-### `has(phraseId, lang?)`
+### `lexicon.extend({ locales, translations } = {})`
 
-Returns `true` if the phrase exists (including via fallback), otherwise `false`.
+Creates a child `Lexicon` with `parent = this`.
 
-### `sayOr(phraseId, fallback, lang?)`
+### `lexicon.addSibling(lexicon)`
 
-Returns the phrase if found; otherwise returns `fallback`.
+Adds sibling lexicon for lookup fallback.
+
+### `say(phraseId)`
+
+Returns phrase or fallback `"{phraseId}"`.
+
+### `say.has(phraseId)`
+
+Returns boolean.
+
+### `say.or(phraseId, fallback)`
+
+Returns phrase or custom fallback.
+
+### `say.num(phraseId, num, opt = {})`
+
+Uses locale inflection on phrase template.
+
+If phrase is missing, fallback template is used: `{{#} phraseId}`.
+
+### `say.all(text)`
+
+Replaces all letter words in `text` using `say`.
+
+### `new Locale({ ... })`
+
+Main options:
+
+- `id`: locale ID for `toLocaleString`.
+- `inflectSelector(number, patternArray)`.
+- `numberPlaceholder` (default `"{#}"`).
+- `nanSymbol` (default `"?"`), `nanSelect`.
+- `infinitySymbol` (default `"\\u221E"`), `infinitySelect`.
+
+## Phrase Patterns
+
+Use `"{#}"` for number and one bracket pattern for inflection.
+
+Examples:
+
+```js
+"{#} hour[s]"         // en default: 1 hour, 2 hours
+"{#} hodin[|a|y|]"    // cs default: 1 hodina, 2 hodiny, 5 hodin
+"{#} [is|are] open"   // custom selector can pick a full word
+```
+
+Pattern content goes to `inflectSelector(number, patternArray)`.
+
+## `say.num` options
+
+- `decimal`: `number` or `[min, max]` for fraction digits.
+- `noZero`: hide output when rounded number is zero.
+- `noNaN`: hide output for `NaN`.
+- `noInfinity`: hide output for `Infinity`.
+- `noBS`: hide all non-finite and zero shortcuts.
+- `nanSymbol`: override locale NaN symbol.
+- `infinitySymbol`: override locale infinity symbol.
+
+## Defaults Strategy
+
+Built-in locale defaults are intentionally small:
+
+- `en`, `de` share English inflection selector.
+- `cs`, `sk` share Czech-style selector.
+- `pl` has dedicated selector.
+
+If you need strict grammar rules, pass your own `Locale` instances.
 
 ## License
 

@@ -13,12 +13,18 @@ export class Say extends Function {
 
     has(phraseId) {
         const { lexicon, locale } = this;
-        return lexicon.lookup(locale, phraseId, false) != null;
+        return lexicon.lookup(locale.id, phraseId, false) != null;
     }
 
     or(phraseId, fallback) {
         const { lexicon, locale } = this;
-        return lexicon.lookup(locale, phraseId, false) ?? fallback;
+        return lexicon.lookup(locale.id, phraseId, false) ?? fallback;
+    }
+
+    num(phraseId, num, opt={}) {
+        const { locale } = this;
+        const phrase = this.or(phraseId, `{{#} ${phraseId}}`);
+        return locale.inflect(phrase, num, opt);
     }
 
     all(text) {

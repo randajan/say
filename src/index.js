@@ -8,5 +8,5 @@ export default Lexicon;
 export {
     Lexicon,
     Locale,
-    Say,
+    Say
 }
