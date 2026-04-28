@@ -81,6 +81,17 @@ show("sayCs.num('eur', 2) ->", sayCs.num("eur", 2));
 show("sayEn.num('eur', 5) ->", sayEn.num("eur", 5));
 
 hr();
+log("date / time / dateTime");
+const sampleDate = "2024-01-02T03:04:05.678Z";
+const utcOpt = { timeZone: "UTC" };
+show("sayCs.date(sampleDate, utcOpt) ->", sayCs.date(sampleDate, utcOpt));
+show("sayCs.time(sampleDate, utcOpt) ->", sayCs.time(sampleDate, utcOpt));
+show("sayCs.dateTime(sampleDate, utcOpt) ->", sayCs.dateTime(sampleDate, utcOpt));
+show("sayEnGb.dateTime(sampleDate, utcOpt) ->", sayEnGb.dateTime(sampleDate, utcOpt));
+show("sayCs.date('bad-input') ->", sayCs.date("bad-input"));
+show("sayCs.date('bad-input', { invalidDate: '<custom>' }) ->", sayCs.date("bad-input", { invalidDate: "<custom>" }));
+
+hr();
 log("Missing phrase default behavior");
 show("lexApp.lookup('en','missing', false) ->", lexApp.lookup("en", "missing", false));
 

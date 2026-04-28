@@ -4,6 +4,7 @@ Tiny i18n dictionary with callable sugar and number inflection.
 
 `say("hello")`  
 `say.num("hours", 3)`  
+`say.dateTime(Date.now())`  
 Done.
 
 ## Install
@@ -38,6 +39,9 @@ sayCs("hello");        // "Ahoj"
 sayCs.num("hours", 1); // "1 hodina"
 sayCs.num("hours", 3); // "3 hodiny"
 sayCs.num("hours", 5); // "5 hodin"
+
+sayEn.date("2024-01-02T03:04:05.678Z", { timeZone: "UTC" }); // localized date
+sayCs.time("bad-input"); // "Neplatné datum" (from locale.invalidDate)
 ```
 
 ## Exports
@@ -63,7 +67,7 @@ import pl from "@randajan/say/defaults/locales/pl";
 ## Mental Model
 
 - `Lexicon`: translations + fallback graph.
-- `Locale`: number formatting + inflection selector.
+- `Locale`: number + date/time formatting + inflection selector.
 - `Say`: callable view bound to one locale.
 
 `select(localeId)` gives you a `say` function:
@@ -73,6 +77,9 @@ const say = lexicon.select("en");
 say("hello");
 say.or("missing", "<fallback>");
 say.num("hours", 2);
+say.date(new Date());
+say.time(Date.now());
+say.dateTime("2024-01-02T03:04:05.678Z");
 ```
 
 ## API
@@ -135,6 +142,25 @@ Uses locale inflection on phrase template.
 
 If phrase is missing, fallback template is used: `{{#} phraseId}`.
 
+### `say.date(value = Date.now(), opt = {})`
+
+Returns localized date string (`toLocaleDateString`).
+
+### `say.time(value = Date.now(), opt = {})`
+
+Returns localized time string (`toLocaleTimeString`).
+
+### `say.dateTime(value = Date.now(), opt = {})`
+
+Returns localized date-time string (`toLocaleString`).
+
+`value` can be `Date`, timestamp, or date-like string.
+
+If value is invalid date, output is:
+
+- `opt.invalidDate` (if provided)
+- otherwise `locale.invalidDate`
+
 ### `say.all(text)`
 
 Replaces all letter words in `text` using `say`.
@@ -148,6 +174,7 @@ Main options:
 - `numberPlaceholder` (default `"{#}"`).
 - `nanSymbol` (default `"?"`), `nanSelect`.
 - `infinitySymbol` (default `"\\u221E"`), `infinitySelect`.
+- `invalidDate` (default `"?"`): fallback for invalid date input in `say.date*`.
 
 ## Phrase Patterns
 
@@ -172,6 +199,27 @@ Pattern content goes to `inflectSelector(number, patternArray)`.
 - `noBS`: hide all non-finite and zero shortcuts.
 - `nanSymbol`: override locale NaN symbol.
 - `infinitySymbol`: override locale infinity symbol.
+
+## `say.date`, `say.time`, `say.dateTime` options
+
+All `Intl.DateTimeFormatOptions` are supported and forwarded to native formatter.
+
+Extra option:
+
+- `invalidDate`: override fallback for invalid date values.
+
+Example:
+
+```js
+say.dateTime("2024-01-02T03:04:05.678Z", {
+    timeZone: "UTC",
+    dateStyle: "short",
+    timeStyle: "medium"
+});
+
+say.date("bad-input"); // from locale.invalidDate
+say.date("bad-input", { invalidDate: "<custom>" }); // "<custom>"
+```
 
 ## Defaults Strategy
 

@@ -3,7 +3,8 @@ import inflectSelector from "../inflects/pl";
 
 const pl = new Locale({
     id: "pl",
-    inflectSelector
+    inflectSelector,
+    invalidDate: "Nieprawidłowa data"
 });
 
 export default pl;

@@ -1,10 +1,41 @@
 import { solids } from "@randajan/props";
-import { formatDecimalCfg, numFormat } from "../tools";
+import { formatDecimalCfg, numFormat, toDate } from "../tools";
 
 const _patternRegex = /\[.+\]/;
 const _defaultInflectSelector = (() => {});
 
+/**
+ * @typedef {object} LocaleOptions
+ * @property {string} id Locale identifier used by Intl formatters.
+ * @property {(number: number, pattern: string[]) => (string|undefined)} [inflectSelector] Pattern selector for `inflect`.
+ * @property {string} [numberPlaceholder] Placeholder replaced by formatted number.
+ * @property {string} [nanSymbol] Replacement used for NaN values.
+ * @property {number} [nanSelect] Pattern index used for NaN symbol.
+ * @property {string} [infinitySymbol] Replacement used for infinity values.
+ * @property {number} [infinitySelect] Pattern index used for infinity symbol.
+ * @property {string} [invalidDate] Fallback returned when date value is invalid.
+ */
+
+/**
+ * @typedef {object} InflectOptions
+ * @property {number|number[]} [decimal] Fraction digits config.
+ * @property {boolean} [noZero] Hide output if rounded number is zero.
+ * @property {boolean} [noNaN] Hide output for NaN.
+ * @property {boolean} [noInfinity] Hide output for infinity.
+ * @property {boolean} [noBS] Hide all special shortcuts (NaN, infinity, zero).
+ * @property {string} [nanSymbol] Overrides locale `nanSymbol`.
+ * @property {string} [infinitySymbol] Overrides locale `infinitySymbol`.
+ */
+
+/**
+ * Numeric and date formatting rules bound to a locale id.
+ */
 export class Locale {
+    /**
+     * Builds an id->index map for locale arrays.
+     * @param {(string|Locale|{id:string})[]} [locales=[]]
+     * @returns {Record<string, number>}
+     */
     static makeLocalesIndex(locales = []) {
         const idx = {};
         for (let i = 0; i < locales.length; i++) {
@@ -22,6 +53,12 @@ export class Locale {
         return idx;
     }
 
+    /**
+     * Normalizes locale input into a Locale instance.
+     * @param {string|Locale|object} rawLocale
+     * @param {(localeId:string)=>Locale|undefined} [resolveById]
+     * @returns {Locale}
+     */
     static normalize(rawLocale, resolveById) {
         if (rawLocale instanceof Locale) { return rawLocale; }
 
@@ -40,11 +77,21 @@ export class Locale {
         throw new TypeError(`Locale must be string, Locale instance, or object, got '${rawLocale}'`);
     }
 
+    /**
+     * Normalizes all locale inputs.
+     * @param {(string|Locale|object)[]} [locales=[]]
+     * @param {(localeId:string)=>Locale|undefined} [resolveById]
+     * @param {boolean} [freeze=true]
+     * @returns {Locale[]}
+     */
     static normalizeAll(locales = [], resolveById, freeze=true) {
         const arr = (locales ?? []).map((rawLocale) => Locale.normalize(rawLocale, resolveById));
         return freeze ? Object.freeze(arr) : arr;
     }
 
+    /**
+     * @param {LocaleOptions} [options={}]
+     */
     constructor({
         id,
         inflectSelector = _defaultInflectSelector,
@@ -53,6 +100,7 @@ export class Locale {
         nanSelect = 0,
         infinitySymbol = "\u221E",
         infinitySelect = 0,
+        invalidDate = "?",
     } = {}) {
         solids(this, {
             id,
@@ -62,10 +110,14 @@ export class Locale {
             nanSelect,
             infinitySymbol,
             infinitySelect,
+            invalidDate,
             cachedPatterns: new Map()
         });
     }
 
+    /**
+     * @returns {string}
+     */
     toString() {
         return this.id;
     }
@@ -103,6 +155,30 @@ export class Locale {
         return this._applyInflect(str, numStr, p.raw, p.inflected);
     }
 
+    /**
+     * Internal helper for locale date/time formatting used by Say methods.
+     * @param {Date|number|string} value
+     * @param {{invalidDate?:string} & Intl.DateTimeFormatOptions} [opt={}]
+     * @param {"toLocaleDateString"|"toLocaleString"|"toLocaleTimeString"} formatMethod
+     * @returns {string}
+     */
+    _formatDate(value, opt, formatMethod) {
+        if (!opt || typeof opt !== "object") { opt = {}; }
+
+        const date = toDate(value);
+        if (Number.isNaN(date.getTime())) { return opt.invalidDate ?? this.invalidDate; }
+
+        const { invalidDate, ...formatOpt } = opt;
+        return date[formatMethod](this.id, formatOpt);
+    }
+
+    /**
+     * Applies locale number formatting and inflection selector to a pattern string.
+     * @param {string} str Phrase pattern (e.g. "{#} hour[s]").
+     * @param {number} num Input number.
+     * @param {InflectOptions} [opt={}]
+     * @returns {string}
+     */
     inflect(str, num, opt = {}) {
         const { id, nanSelect, infinitySelect } = this;
         const { decimal, noZero, noNaN, noInfinity, noBS } = opt;

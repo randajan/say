@@ -2,13 +2,20 @@ import { solids } from "@randajan/props";
 import { Locale } from "./Locale";
 import { Say } from "./Say";
 
+/**
+ * @typedef {object} LexiconOptions
+ * @property {(string|Locale|object)[]} [locales]
+ * @property {Record<string, string[]>} [translations]
+ * @property {Lexicon|null} [parent]
+ */
+
+/**
+ * Translation storage with locale resolution and fallback graph (self, siblings, parent).
+ */
 export class Lexicon {
 
     /**
-     * @param {object} opts
-     * @param {(string|Locale|object)[]} opts.locales
-     * @param {Record<string, string[]>} opts.translations
-     * @param {Lexicon|null} opts.parent
+     * @param {LexiconOptions} [opts={}]
      */
 
     constructor({
@@ -31,6 +38,12 @@ export class Lexicon {
 
     }
 
+    /**
+     * Lookup in current lexicon only (no fallback traversal).
+     * @param {string} localeId
+     * @param {string} phraseId
+     * @returns {string|undefined}
+     */
     lookupSelf(localeId, phraseId) {
         const i = this.localeIndex[localeId];
         if (i == null) { return; }
@@ -39,6 +52,13 @@ export class Lexicon {
         return arr[i];
     }
 
+    /**
+     * Lookup via sibling lexicons.
+     * @param {string} localeId
+     * @param {string} phraseId
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {string|undefined}
+     */
     lookupSiblings(localeId, phraseId, seen=new WeakSet()) {
         const { siblings } = this;
         if (!siblings.length) { return; }
@@ -48,11 +68,26 @@ export class Lexicon {
         }
     }
 
+    /**
+     * Lookup via parent lexicon.
+     * @param {string} localeId
+     * @param {string} phraseId
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {string|undefined}
+     */
     lookupParent(localeId, phraseId, seen=new WeakSet()) {
         const { parent } = this;
         return parent?.lookup(localeId, phraseId, false, seen);
     }
 
+    /**
+     * Resolves phrase by fallback order: self -> siblings -> parent.
+     * @param {string} localeId
+     * @param {string} phraseId
+     * @param {boolean} [throwError=true]
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {string|undefined}
+     */
     lookup(localeId, phraseId, throwError=true, seen=new WeakSet()) {
         if (seen.has(this)) { return; } else { seen.add(this); }
 
@@ -69,17 +104,34 @@ export class Lexicon {
         throw new Error(`Phrase '${phraseId}' not found (locale '${localeId}').`);
     }
 
+    /**
+     * Resolve locale in current lexicon only.
+     * @param {string} localeId
+     * @returns {Locale|undefined}
+     */
     resolveLocaleSelf(localeId) {
         const i = this.localeIndex[localeId];
         if (i == null) { return; }
         return this.locales[i];
     }
 
+    /**
+     * Resolve locale via parent lexicon.
+     * @param {string} localeId
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {Locale|undefined}
+     */
     resolveLocaleParent(localeId, seen=new WeakSet()) {
         const { parent } = this;
         return parent?.resolveLocale(localeId, false, seen);
     }
 
+    /**
+     * Resolve locale via sibling lexicons.
+     * @param {string} localeId
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {Locale|undefined}
+     */
     resolveLocaleSiblings(localeId, seen=new WeakSet()) {
         const { siblings } = this;
         if (!siblings.length) { return; }
@@ -89,6 +141,13 @@ export class Lexicon {
         }
     }
 
+    /**
+     * Resolves locale by order: self -> parent -> siblings.
+     * @param {string} localeId
+     * @param {boolean} [throwError=true]
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {Locale|undefined}
+     */
     resolveLocale(localeId, throwError=true, seen=new WeakSet()) {
         if (seen.has(this)) { return; } else { seen.add(this); }
 
@@ -105,11 +164,21 @@ export class Lexicon {
         throw new Error(`Locale '${localeId}' not found.`);
     }
 
+    /**
+     * Creates child lexicon with current instance as parent.
+     * @param {{locales?:(string|Locale|object)[], translations?:Record<string, string[]>}} [opts={}]
+     * @returns {Lexicon}
+     */
     extend({ locales, translations} = {}) {
         if (!locales) { locales = this.locales; }
         return new Lexicon({locales, translations, parent:this});
     }
     
+    /**
+     * Registers another lexicon as sibling fallback.
+     * @param {Lexicon} sibling
+     * @returns {this}
+     */
     addSibling(sibling) {
         if (sibling === this) {
             throw new Error(`Lexicon.addSibling(sibling) can't accept itself`);
@@ -124,6 +193,11 @@ export class Lexicon {
         return this;
     }
 
+    /**
+     * Returns callable Say view bound to resolved locale.
+     * @param {string} localeId
+     * @returns {Say}
+     */
     select(localeId) {
         return new Say(this, this.resolveLocale(localeId));
     }

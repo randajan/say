@@ -27,3 +27,5 @@ export const numFormat = (num, maximumFractionDigits)=>{
     const z = Math.pow(10, md);
     return Math.round(num*z)/z;
 }
+
+export const toDate = (value) => value instanceof Date ? value : new Date(value ?? Date.now());
