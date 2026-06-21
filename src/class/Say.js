@@ -1,7 +1,7 @@
 import { solids } from "@randajan/props";
 
 /**
- * @typedef {object} SayDateOptions
+ * @typedef {import("../dateTime").DateTimeOptions & object} SayDateOptions
  * @property {string} [invalidDate] Fallback returned for invalid date values.
  */
 
@@ -13,13 +13,15 @@ export class Say extends Function {
     /**
      * @param {import("./Lexicon").Lexicon} lexicon
      * @param {import("./Locale").Locale} locale
+     * @param {import("../dateTime").DateTimeOptions} [dateOptions={}]
+     * Defaults merged into every date/time call.
      */
-    constructor(lexicon, locale) {
+    constructor(lexicon, locale, dateOptions={}) {
         super();
 
         const _say = (phraseId) => _say.or(phraseId, `{${phraseId}}`);
 
-        solids(_say, {lexicon, locale});
+        solids(_say, {lexicon, locale, dateOptions:Object.freeze(dateOptions)});
 
         return Object.setPrototypeOf(_say, new.target.prototype);
     }
@@ -61,31 +63,34 @@ export class Say extends Function {
     /**
      * Formats date part only for current locale.
      * @param {Date|number|string} [value=Date.now()]
-     * @param {SayDateOptions & Intl.DateTimeFormatOptions} [opt={}]
+     * @param {SayDateOptions} [opt={}]
      * @returns {string}
      */
     date(value=Date.now(), opt={}) {
-        return this.locale._formatDate(value, opt, "toLocaleDateString");
+        const { lexicon, locale, dateOptions } = this;
+        return locale._formatDate(value, {...lexicon.dateOptions, ...dateOptions, ...opt}, "Date");
     }
 
     /**
      * Formats localized date and time.
      * @param {Date|number|string} [value=Date.now()]
-     * @param {SayDateOptions & Intl.DateTimeFormatOptions} [opt={}]
+     * @param {SayDateOptions} [opt={}]
      * @returns {string}
      */
     dateTime(value=Date.now(), opt={}) {
-        return this.locale._formatDate(value, opt, "toLocaleString");
+        const { lexicon, locale, dateOptions } = this;
+        return locale._formatDate(value, {...lexicon.dateOptions, ...dateOptions, ...opt});
     }
 
     /**
      * Formats time part only for current locale.
      * @param {Date|number|string} [value=Date.now()]
-     * @param {SayDateOptions & Intl.DateTimeFormatOptions} [opt={}]
+     * @param {SayDateOptions} [opt={}]
      * @returns {string}
      */
     time(value=Date.now(), opt={}) {
-        return this.locale._formatDate(value, opt, "toLocaleTimeString");
+        const { lexicon, locale, dateOptions } = this;
+        return locale._formatDate(value, {...lexicon.dateOptions, ...dateOptions, ...opt}, "Time");
     }
 
     /**

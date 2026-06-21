@@ -7,6 +7,14 @@ import { Say } from "./Say";
  * @property {(string|Locale|object)[]} [locales]
  * @property {Record<string, string[]>} [translations]
  * @property {Lexicon|null} [parent]
+ * @property {import("../dateTime").DateTimeOptions} [dateOptions] Defaults for all `say.date*` calls.
+ */
+
+/**
+ * @typedef {object} LexiconExtendOptions
+ * @property {(string|Locale|object)[]} [locales]
+ * @property {Record<string, string[]>} [translations]
+ * @property {import("../dateTime").DateTimeOptions} [dateOptions]
  */
 
 /**
@@ -21,7 +29,8 @@ export class Lexicon {
     constructor({
         locales = [],
         translations = {},
-        parent = null
+        parent = null,
+        dateOptions = {}
     } = {}) {
 
         const siblings = [];
@@ -32,6 +41,7 @@ export class Lexicon {
             locales,
             localeIndex: Locale.makeLocalesIndex(locales),
             translations,
+            dateOptions:Object.freeze(dateOptions),
             parent,
             siblings
         });
@@ -166,12 +176,13 @@ export class Lexicon {
 
     /**
      * Creates child lexicon with current instance as parent.
-     * @param {{locales?:(string|Locale|object)[], translations?:Record<string, string[]>}} [opts={}]
+     * @param {LexiconExtendOptions} [opts={}]
      * @returns {Lexicon}
      */
-    extend({ locales, translations} = {}) {
+    extend({ locales, translations, dateOptions} = {}) {
         if (!locales) { locales = this.locales; }
-        return new Lexicon({locales, translations, parent:this});
+        if (!dateOptions) { dateOptions = this.dateOptions; }
+        return new Lexicon({locales, translations, dateOptions, parent:this});
     }
     
     /**

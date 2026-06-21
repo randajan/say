@@ -25,7 +25,7 @@ const lexBase = new Lexicon({
         hours: ["{#} hour[s]", "{#} hodin[|a|y|]", "{#} hour[s]"],
         czk:["{#} CZK", "{#} Kč", "{#} CZK"],
         eur:["€{#}", "€{#}", "€{#}"]
-    },
+    }
 });
 
 hr();
@@ -83,7 +83,7 @@ show("sayEn.num('eur', 5) ->", sayEn.num("eur", 5));
 hr();
 log("date / time / dateTime");
 const sampleDate = "2024-01-02T03:04:05.678Z";
-const utcOpt = { timeZone: "UTC" };
+const utcOpt = { timeZone: "UTC", second:"none", weekday:"long" };
 show("sayCs.date(sampleDate, utcOpt) ->", sayCs.date(sampleDate, utcOpt));
 show("sayCs.time(sampleDate, utcOpt) ->", sayCs.time(sampleDate, utcOpt));
 show("sayCs.dateTime(sampleDate, utcOpt) ->", sayCs.dateTime(sampleDate, utcOpt));

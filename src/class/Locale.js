@@ -1,5 +1,6 @@
 import { solids } from "@randajan/props";
 import { formatDecimalCfg, numFormat, toDate } from "../tools";
+import { formatDateTime } from "../dateTime";
 
 const _patternRegex = /\[.+\]/;
 const _defaultInflectSelector = (() => {});
@@ -158,18 +159,18 @@ export class Locale {
     /**
      * Internal helper for locale date/time formatting used by Say methods.
      * @param {Date|number|string} value
-     * @param {{invalidDate?:string} & Intl.DateTimeFormatOptions} [opt={}]
-     * @param {"toLocaleDateString"|"toLocaleString"|"toLocaleTimeString"} formatMethod
+     * @param {import("../dateTime").DateTimeOptions & {invalidDate?:string}} [opt={}]
+     * @param {""|"Date"|"Time"} [formatMethod=""]
      * @returns {string}
      */
-    _formatDate(value, opt, formatMethod) {
+    _formatDate(value, opt, formatMethod="") {
         if (!opt || typeof opt !== "object") { opt = {}; }
 
         const date = toDate(value);
         if (Number.isNaN(date.getTime())) { return opt.invalidDate ?? this.invalidDate; }
 
         const { invalidDate, ...formatOpt } = opt;
-        return date[formatMethod](this.id, formatOpt);
+        return formatDateTime(date, this.id, { ...this.dateOptions, ...formatOpt }, formatMethod);
     }
 
     /**
@@ -204,5 +205,27 @@ export class Locale {
 
         const nStr = n.toLocaleString(id, decCfg);
         return this._inflectByNum(str, nStr, n);
+    }
+
+    extend({
+        id,
+        inflectSelector,
+        numberPlaceholder,
+        nanSymbol,
+        nanSelect,
+        infinitySymbol,
+        infinitySelect,
+        invalidDate,
+    }) {
+        return new Locale({
+            id:id || this.id,
+            inflectSelector:inflectSelector || this.inflectSelector,
+            numberPlaceholder:numberPlaceholder || this.numberPlaceholder,
+            nanSymbol:nanSymbol || this.nanSymbol,
+            nanSelect:nanSelect || this.nanSelect,
+            infinitySymbol: infinitySymbol || this.infinitySymbol,
+            infinitySelect: infinitySelect || this.infinitySelect,
+            invalidDate: invalidDate || this.invalidDate
+        });
     }
 }

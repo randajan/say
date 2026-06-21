@@ -1,6 +1,6 @@
 # @randajan/say
 
-Tiny i18n dictionary with callable sugar and number inflection.
+Tiny i18n dictionary with callable sugar, number inflection, and shared date/time formatting.
 
 `say("hello")`  
 `say.num("hours", 3)`  
@@ -25,6 +25,11 @@ const lexicon = new Lexicon({
     translations: {
         hello: ["Hello", "Ahoj"],
         hours: ["{#} hour[s]", "{#} hodin[|a|y|]"]
+    },
+    dateOptions: {
+        timeZone: "UTC",
+        style: "2-digit",
+        second: "none"
     }
 });
 
@@ -40,7 +45,7 @@ sayCs.num("hours", 1); // "1 hodina"
 sayCs.num("hours", 3); // "3 hodiny"
 sayCs.num("hours", 5); // "5 hodin"
 
-sayEn.date("2024-01-02T03:04:05.678Z", { timeZone: "UTC" }); // localized date
+sayEn.dateTime("2024-01-02T03:04:05.678Z", { weekday: "short" }); // shared defaults + call override
 sayCs.time("bad-input"); // "Neplatné datum" (from locale.invalidDate)
 ```
 
@@ -84,11 +89,12 @@ say.dateTime("2024-01-02T03:04:05.678Z");
 
 ## API
 
-### `new Lexicon({ locales, translations, parent } = {})`
+### `new Lexicon({ locales, translations, parent, dateOptions } = {})`
 
 - `locales`: array of `Locale | string | object`.
 - `translations`: `Record<string, string[]>` aligned by `locales` index.
 - `parent`: optional parent `Lexicon`.
+- `dateOptions`: shared defaults for `say.date`, `say.time`, and `say.dateTime`.
 
 Locale IDs are matched exactly (`"en"` is not `"en-GB"`).
 
@@ -116,9 +122,11 @@ If not found and `throwError === true`, throws.
 
 Returns a callable `Say` instance bound to resolved `Locale`.
 
-### `lexicon.extend({ locales, translations } = {})`
+### `lexicon.extend({ locales, translations, dateOptions } = {})`
 
 Creates a child `Lexicon` with `parent = this`.
+
+If `dateOptions` is omitted, the child keeps the parent's date/time defaults.
 
 ### `lexicon.addSibling(lexicon)`
 
@@ -144,15 +152,15 @@ If phrase is missing, fallback template is used: `{{#} phraseId}`.
 
 ### `say.date(value = Date.now(), opt = {})`
 
-Returns localized date string (`toLocaleDateString`).
+Returns localized date string (`toLocaleDateString`) using shared date/time options.
 
 ### `say.time(value = Date.now(), opt = {})`
 
-Returns localized time string (`toLocaleTimeString`).
+Returns localized time string (`toLocaleTimeString`) using shared date/time options.
 
 ### `say.dateTime(value = Date.now(), opt = {})`
 
-Returns localized date-time string (`toLocaleString`).
+Returns localized date-time string (`toLocaleString`) using shared date/time options.
 
 `value` can be `Date`, timestamp, or date-like string.
 
@@ -202,19 +210,47 @@ Pattern content goes to `inflectSelector(number, patternArray)`.
 
 ## `say.date`, `say.time`, `say.dateTime` options
 
-All `Intl.DateTimeFormatOptions` are supported and forwarded to native formatter.
+Date/time options are merged in this order:
 
-Extra option:
+1. `lexicon.dateOptions`
+2. optional `Say` constructor defaults
+3. call options passed to `say.date*`
 
+The result is forwarded to the native locale formatter:
+
+- `say.date(...)`: `toLocaleDateString`
+- `say.time(...)`: `toLocaleTimeString`
+- `say.dateTime(...)`: `toLocaleString`
+
+Supported options:
+
+- `style`: `"numeric"` (default) or `"2-digit"`. It fills missing `year`, `month`, `day`, `hour`, `minute`, and `second` options.
+- any `Intl.DateTimeFormatOptions` component option, such as `timeZone`, `weekday`, `year`, `month`, `day`, `hour`, `minute`, `second`, `hour12`, or `dayPeriod`.
+- `null`, `"none"`, and `"hide"` remove an option before native formatting. This is useful when you set global defaults and want to hide one component.
 - `invalidDate`: override fallback for invalid date values.
 
 Example:
 
 ```js
+const lexicon = new Lexicon({
+    locales: [en, cs],
+    translations: {},
+    dateOptions: {
+        timeZone: "UTC",
+        style: "2-digit",
+        second: "none"
+    }
+});
+
+const say = lexicon.select("en");
+
 say.dateTime("2024-01-02T03:04:05.678Z", {
+    weekday: "short"
+});
+
+say.time("2024-01-02T03:04:05.678Z", {
     timeZone: "UTC",
-    dateStyle: "short",
-    timeStyle: "medium"
+    second: "numeric"
 });
 
 say.date("bad-input"); // from locale.invalidDate
