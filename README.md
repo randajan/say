@@ -17,8 +17,8 @@ npm install @randajan/say
 
 ```js
 import Lexicon from "@randajan/say";
-import en from "@randajan/say/defaults/locales/en";
-import cs from "@randajan/say/defaults/locales/cs";
+import en from "@randajan/say/en";
+import cs from "@randajan/say/cs";
 
 const lexicon = new Lexicon({
     locales: [en, cs],
@@ -62,11 +62,11 @@ import Lexicon, { Lexicon as LexiconClass, Locale, Say } from "@randajan/say";
 ### Locale defaults
 
 ```js
-import en from "@randajan/say/defaults/locales/en";
-import de from "@randajan/say/defaults/locales/de";
-import cs from "@randajan/say/defaults/locales/cs";
-import sk from "@randajan/say/defaults/locales/sk";
-import pl from "@randajan/say/defaults/locales/pl";
+import en from "@randajan/say/locale/en";
+import de from "@randajan/say/locale/de";
+import cs from "@randajan/say/locale/cs";
+import sk from "@randajan/say/locale/sk";
+import pl from "@randajan/say/locale/pl";
 ```
 
 ## Mental Model
