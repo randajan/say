@@ -33,7 +33,7 @@ export class Say extends Function {
      */
     has(phraseId) {
         const { lexicon, locale } = this;
-        return lexicon.lookup(locale.id, phraseId, false) != null;
+        return lexicon.lookup(locale.id, phraseId) != null;
     }
 
     /**
@@ -44,7 +44,7 @@ export class Say extends Function {
      */
     or(phraseId, fallback) {
         const { lexicon, locale } = this;
-        return lexicon.lookup(locale.id, phraseId, false) ?? fallback;
+        return lexicon.lookup(locale.id, phraseId) ?? fallback;
     }
 
     /**
@@ -100,5 +100,21 @@ export class Say extends Function {
      */
     all(text) {
         return String(text ?? "").replace(/\p{L}+/gu, this);
+    }
+
+    /**
+     * Returns a random phrase id matching filter for current locale.
+     * @param {(phraseId:string)=>boolean} filter
+     * @param {string} [fallback=""]
+     * @returns {string}
+     */
+    random(filter, fallback="") {
+        const { lexicon, locale } = this;
+        const c = lexicon.collect(locale.id, filter);
+        const list = [...Object.keys(c)];
+        const l = list.length;
+        if (!l) { return fallback; }
+        const n = Math.floor(Math.random() * l);
+        return list[n];
     }
 }

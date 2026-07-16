@@ -18,6 +18,16 @@ import { Say } from "./Say";
  */
 
 /**
+ * @callback PhraseFilter
+ * @param {string} phraseId
+ * @returns {boolean}
+ */
+
+/**
+ * @typedef {Record<string, string>} TranslationCollector
+ */
+
+/**
  * Translation storage with locale resolution and fallback graph (self, siblings, parent).
  */
 export class Lexicon {
@@ -73,7 +83,7 @@ export class Lexicon {
         const { siblings } = this;
         if (!siblings.length) { return; }
         for (const sibling of siblings) {
-            const r = sibling.lookup(localeId, phraseId, false, seen);
+            const r = sibling.lookup(localeId, phraseId, seen);
             if (r != null) { return r; }
         }
     }
@@ -87,18 +97,17 @@ export class Lexicon {
      */
     lookupParent(localeId, phraseId, seen=new WeakSet()) {
         const { parent } = this;
-        return parent?.lookup(localeId, phraseId, false, seen);
+        return parent?.lookup(localeId, phraseId, seen);
     }
 
     /**
      * Resolves phrase by fallback order: self -> siblings -> parent.
      * @param {string} localeId
      * @param {string} phraseId
-     * @param {boolean} [throwError=true]
      * @param {WeakSet<object>} [seen=new WeakSet()]
      * @returns {string|undefined}
      */
-    lookup(localeId, phraseId, throwError=true, seen=new WeakSet()) {
+    lookup(localeId, phraseId, seen=new WeakSet()) {
         if (seen.has(this)) { return; } else { seen.add(this); }
 
         const vh = this.lookupSelf(localeId, phraseId);
@@ -109,9 +118,79 @@ export class Lexicon {
 
         const vp = this.lookupParent(localeId, phraseId, seen);
         if (vp != null) { return vp; }
+    }
 
-        if (!throwError) { return; }
-        throw new Error(`Phrase '${phraseId}' not found (locale '${localeId}').`);
+    /**
+     * Collects matching translations from current lexicon only.
+     * Existing keys in collector keep their earlier fallback value.
+     * @param {string} localeId
+     * @param {PhraseFilter} filter
+     * @param {TranslationCollector} [collector={}]
+     * @returns {TranslationCollector}
+     */
+    collectSelf(localeId, filter, collector={}) {
+        const i = this.localeIndex[localeId];
+        if (i == null) { return collector; }
+
+        for (const key in this.translations) {
+            if (Object.hasOwn(collector, key)) { continue; }
+            if (!filter(key)) { continue; }
+            const arr = this.translations[key];
+            if (!Array.isArray(arr) || arr[i] == null) { continue; }
+            collector[key] = arr[i];
+        }
+
+        return collector;
+    }
+
+    /**
+     * Collects matching translations from sibling lexicons.
+     * @param {string} localeId
+     * @param {PhraseFilter} filter
+     * @param {TranslationCollector} [collector={}]
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {TranslationCollector}
+     */
+    collectSiblings(localeId, filter, collector={}, seen=new WeakSet()) {
+        const { siblings } = this;
+        if (!siblings.length) { return collector; }
+        for (const sibling of siblings) {
+            collector = sibling.collect(localeId, filter, collector, seen);
+        }
+        return collector;
+    }
+
+    /**
+     * Collects matching translations from parent lexicon.
+     * @param {string} localeId
+     * @param {PhraseFilter} filter
+     * @param {TranslationCollector} [collector={}]
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {TranslationCollector|undefined}
+     */
+    collectParent(localeId, filter, collector={}, seen=new WeakSet()) {
+        const { parent } = this;
+        return parent?.collect(localeId, filter, collector, seen);
+    }
+
+    /**
+     * Collects matching translations by fallback order: self -> siblings -> parent.
+     * The first value found for each phrase id wins.
+     * @param {string} localeId
+     * @param {PhraseFilter} filter
+     * @param {TranslationCollector} [collector={}]
+     * @param {WeakSet<object>} [seen=new WeakSet()]
+     * @returns {TranslationCollector}
+     */
+    collect(localeId, filter, collector={}, seen=new WeakSet()) {
+        if (seen.has(this)) { return collector; }
+        seen.add(this);
+
+        this.collectSelf(localeId, filter, collector);
+        this.collectSiblings(localeId, filter, collector, seen);
+        this.collectParent(localeId, filter, collector, seen);
+
+        return collector;
     }
 
     /**

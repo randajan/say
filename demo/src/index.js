@@ -10,7 +10,7 @@ const showJson = (label, value) => log(label, JSON.stringify(value));
 
 const tell = (lexicon, locale, text) => {
     return String(text ?? "").replace(/\p{L}+/gu, (phraseId) => {
-        return lexicon.lookup(locale, phraseId, false) ?? `{${phraseId}}`;
+        return lexicon.lookup(locale, phraseId) ?? `{${phraseId}}`;
     });
 };
 
@@ -55,9 +55,9 @@ const sayEnGb = lexApp.select("en-GB");
 
 hr();
 log("Lookup usage");
-show("lexApp.lookup('cs', 'welcome') ->", lexApp.lookup("cs", "welcome", false));
-show("lexApp.lookup('en-GB', 'color') ->", lexApp.lookup("en-GB", "color", false)); // override from lexUk
-show("lexApp.lookup('en', 'phone') ->", lexApp.lookup("en", "phone", false)); // fallback to base
+show("lexApp.lookup('cs', 'welcome') ->", lexApp.lookup("cs", "welcome"));
+show("lexApp.lookup('en-GB', 'color') ->", lexApp.lookup("en-GB", "color")); // override from lexUk
+show("lexApp.lookup('en', 'phone') ->", lexApp.lookup("en", "phone")); // fallback to base
 
 hr();
 log("has / or / empty-string support");
@@ -93,7 +93,7 @@ show("sayCs.date('bad-input', { invalidDate: '<custom>' }) ->", sayCs.date("bad-
 
 hr();
 log("Missing phrase default behavior");
-show("lexApp.lookup('en','missing', false) ->", lexApp.lookup("en", "missing", false));
+show("lexApp.lookup('en','missing') ->", lexApp.lookup("en", "missing"));
 
 hr();
 log("tell(text) word replacement");

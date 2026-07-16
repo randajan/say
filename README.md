@@ -98,7 +98,7 @@ say.dateTime("2024-01-02T03:04:05.678Z");
 
 Locale IDs are matched exactly (`"en"` is not `"en-GB"`).
 
-### `lexicon.lookup(localeId, phraseId, throwError = true)`
+### `lexicon.lookup(localeId, phraseId)`
 
 Lookup order:
 
@@ -106,7 +106,23 @@ Lookup order:
 2. siblings
 3. parent
 
-If nothing is found and `throwError === true`, throws.
+Returns `undefined` if nothing is found.
+
+### `lexicon.collect(localeId, filter, collector = {})`
+
+Collects all existing translations for `localeId` whose phrase id passes `filter`.
+
+Collect order:
+
+1. self
+2. siblings
+3. parent
+
+Returns `Record<string, string>` where keys are phrase IDs and values are translated phrases. If the same phrase exists in multiple fallback lexicons, the first collected value wins.
+
+```js
+const messages = lexicon.collect("en", (phraseId) => phraseId.startsWith("message."));
+```
 
 ### `lexicon.resolveLocale(localeId, throwError = true)`
 
@@ -172,6 +188,17 @@ If value is invalid date, output is:
 ### `say.all(text)`
 
 Replaces all letter words in `text` using `say`.
+
+### `say.random(filter, fallback = "")`
+
+Returns a random phrase id from entries available for the current locale and matching `filter`. If no entry matches, returns `fallback`.
+
+The returned value is the phrase id, not the translated phrase.
+
+```js
+const phraseId = say.random((phraseId) => phraseId.startsWith("tip."), "tip.default");
+const text = say(phraseId);
+```
 
 ### `new Locale({ ... })`
 
