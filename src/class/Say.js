@@ -111,7 +111,7 @@ export class Say extends Function {
     random(filter, fallback="") {
         const { lexicon, locale } = this;
         const c = lexicon.collect(locale.id, filter);
-        const list = [...Object.keys(c)];
+        const list = [...Object.values(c)];
         const l = list.length;
         if (!l) { return fallback; }
         const n = Math.floor(Math.random() * l);
